@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_rest_api_gornez/models/api_response.dart';
 import 'package:get_it/get_it.dart';
 
 import '../models/note_for_listing.dart';
@@ -16,7 +17,8 @@ class _NoteListState extends State<NoteList> {
 
   NotesService get service => GetIt.instance<NotesService>();
 
-  List<NoteForListing> notes=[];
+  APIResponse<List<NoteForListing>>? _apiResponse;
+  bool _isloading = false;
 
   String formatDateTime(DateTime dateTime){
     return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
@@ -25,8 +27,20 @@ class _NoteListState extends State<NoteList> {
   @override
   void initState() {
     // TODO: implement initState
-    notes = service.getNotesList();
+    _fetchNotes();
     super.initState();
+  }
+
+  _fetchNotes() async{
+    setState(() {
+      _isloading = true;
+    });
+
+    _apiResponse = await service.getNotesList();
+
+    setState(() {
+      _isloading = false;
+    });
   }
 
   @override
@@ -41,43 +55,55 @@ class _NoteListState extends State<NoteList> {
         },
         child: Icon(Icons.add),
       ),
-      body: ListView.separated(
-          separatorBuilder: (_, __) => Divider(height: 1, color: Colors.green,),
-          itemBuilder: (_, index){
-            return Dismissible(
-              key: ValueKey(notes[index].noteID),
-              direction: DismissDirection.startToEnd,
-              onDismissed: (direction){
+      body: Builder(
+        builder: (_){
+          // if (_isloading){
+          //   return const Center(child: CircularProgressIndicator());
+          // }
 
-              },
-              confirmDismiss: (direction) async{
-                final result = await showDialog(
-                    context: context,
-                    builder: (_)=>NoteDelete());
+          if(_apiResponse!.error!){
+            return Center(child: Text(_apiResponse!.errorMessage!),);
+          }
+          return ListView.separated(
+            separatorBuilder: (_, __) => Divider(height: 1, color: Colors.green,),
+            itemBuilder: (_, index){
+              return Dismissible(
+                key: ValueKey(_apiResponse!.data![index].noteID!),
+                direction: DismissDirection.startToEnd,
+                onDismissed: (direction){
 
-                print(result);
-                return result;
-              },
-              background: Container(
-                color: Colors.red,
-                padding: EdgeInsets.only(left: 16),
-                child: Align(
-                  child: Icon(Icons.delete, color: Colors.white,),
-                  alignment: Alignment.centerLeft,
-                ),
-              ),
-              child: ListTile(
-                title: Text(
-                  notes[index].noteTitle, style: TextStyle(color: Theme.of(context).primaryColor),
-                ),
-                subtitle: Text('Last edited on ${formatDateTime(notes[index].latestEditDateTime)}'),
-                onTap: (){
-                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => NoteModify(noteID: notes[index].noteID)));
                 },
-              ),
-            );
-          },
-          itemCount: notes.length,
+                confirmDismiss: (direction) async{
+                  final result = await showDialog(
+                      context: context,
+                      builder: (_)=>NoteDelete());
+
+                  print(result);
+                  return result;
+                },
+                background: Container(
+                  color: Colors.red,
+                  padding: EdgeInsets.only(left: 16),
+                  child: Align(
+                    child: Icon(Icons.delete, color: Colors.white,),
+                    alignment: Alignment.centerLeft,
+                  ),
+                ),
+                child: ListTile(
+                  title: Text(
+                    _apiResponse!.data![index].noteTitle!, style: TextStyle(color: Theme.of(context).primaryColor),
+                  ),
+                  subtitle: Text('Last edited on ${formatDateTime(_apiResponse!.data![index].latestEditDateTime ??
+                      _apiResponse!.data![index].createDateTime!)}'),
+                  onTap: (){
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => NoteModify(noteID: _apiResponse!.data![index].noteID!)));
+                  },
+                ),
+              );
+            },
+            itemCount:  _apiResponse!.data!.length,
+          );
+        },
       ),
     );
   }
