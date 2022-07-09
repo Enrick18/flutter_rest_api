@@ -33,6 +33,6 @@ class NotesService{
        }
        return APIResponse<List<NoteForListing>>(error: true, errorMessage: 'An error occured');
     })
-        .catchError(()=>APIResponse<List<NoteForListing>>(error: true, errorMessage: 'An error occured'));
+        .catchError((_)=>APIResponse<List<NoteForListing>>(error: true, errorMessage: 'An error occured'));
   }
 }

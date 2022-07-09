@@ -57,18 +57,18 @@ class _NoteListState extends State<NoteList> {
       ),
       body: Builder(
         builder: (_){
-          // if (_isloading){
-          //   return const Center(child: CircularProgressIndicator());
-          // }
+          if (_isloading){
+            return const Center(child: CircularProgressIndicator());
+          }
 
-          if(_apiResponse!.error!){
+          if(_apiResponse!.error){
             return Center(child: Text(_apiResponse!.errorMessage!),);
           }
           return ListView.separated(
             separatorBuilder: (_, __) => Divider(height: 1, color: Colors.green,),
             itemBuilder: (_, index){
               return Dismissible(
-                key: ValueKey(_apiResponse!.data![index].noteID!),
+                key: ValueKey(_apiResponse!.data![index].noteID),
                 direction: DismissDirection.startToEnd,
                 onDismissed: (direction){
 
