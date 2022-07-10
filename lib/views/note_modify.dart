@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 
 import '../models/note.dart';
+import '../models/note_insert.dart';
 import '../services/notes_service.dart';
 
 
@@ -31,11 +32,12 @@ class _NoteModifyState extends State<NoteModify> {
   void initState() {
     super.initState();
 
-    setState(() {
-      _isLoading =true;
-    });
-    noteService.getNote(widget.noteID!)
-      .then((response){
+    if (isEditing){
+      setState(() {
+        _isLoading =true;
+      });
+      noteService.getNote(widget.noteID!)
+          .then((response){
         setState(() {
           _isLoading = false;
         });
@@ -46,7 +48,8 @@ class _NoteModifyState extends State<NoteModify> {
         note = response.data!;
         _titleController.text = note.noteTitle!;
         _contentController.text = note.noteContent!;
-    });
+      });
+    }
   }
 
   @override
@@ -81,8 +84,49 @@ class _NoteModifyState extends State<NoteModify> {
               width: double.infinity,
               height: 35,
               child: ElevatedButton(
-                onPressed: (){
-                  Navigator.of(context).pop();
+                onPressed: () async {
+                  if(isEditing){
+                    //update note
+                  }else{
+
+                    setState(() {
+                      _isLoading=true;
+                    });
+
+                    final note = NoteInsert(
+                        noteTitle: _titleController.text,
+                        noteContent: _contentController.text
+                    );
+                    final result = await noteService.createNote(note);
+
+                    setState(() {
+                      _isLoading=false;
+                    });
+
+                    const title = 'Done';
+                    final text = result.error ? (result.errorMessage ?? 'An error occured') : 'Your note was created';
+
+                    showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text(title),
+                          content:Text(text),
+                          actions: <Widget>[
+                            ElevatedButton(
+                                child: const Text('Ok'),
+                                onPressed: (){
+                                  Navigator.of(context).pop();
+                                },
+                            ),
+                          ],
+                        )
+                    )
+                    .then((data){
+                     if(result.data!){
+                        Navigator.of(context).pop();
+                      }
+                    });
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   primary: Theme.of(context).primaryColor,
