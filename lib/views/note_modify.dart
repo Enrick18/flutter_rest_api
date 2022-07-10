@@ -1,11 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 
-class NoteModify extends StatelessWidget {
+import '../models/note.dart';
+import '../services/notes_service.dart';
+
+
+class NoteModify extends StatefulWidget {
 
   final String? noteID;
-  bool get isEditing => noteID !=null;
-
   NoteModify({this.noteID});
+
+  @override
+  State<NoteModify> createState() => _NoteModifyState();
+}
+
+class _NoteModifyState extends State<NoteModify> {
+  bool get isEditing => widget.noteID !=null;
+
+  NotesService get noteService => GetIt.I<NotesService>();
+
+  String? errorMessage;
+  late Note note;
+
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _contentController = TextEditingController();
+
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    setState(() {
+      _isLoading =true;
+    });
+    noteService.getNote(widget.noteID!)
+      .then((response){
+        setState(() {
+          _isLoading = false;
+        });
+
+        if(response.error){
+          errorMessage=response.errorMessage ?? 'An error occured';
+        }
+        note = response.data!;
+        _titleController.text = note.noteTitle!;
+        _contentController.text = note.noteContent!;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,9 +57,10 @@ class NoteModify extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: Column(
+        child: _isLoading ? Center(child: CircularProgressIndicator()) : Column(
           children: <Widget>[
             TextField(
+              controller: _titleController,
               decoration: InputDecoration(
                 hintText: 'Note Title'
               ),
@@ -26,6 +69,7 @@ class NoteModify extends StatelessWidget {
             Container(height: 8,),
 
             TextField(
+              controller: _contentController,
               decoration: InputDecoration(
                   hintText: 'Note Content'
               ),
